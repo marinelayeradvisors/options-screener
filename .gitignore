@@ -46,5 +46,6 @@ ENV/
 *.swo
 
 # Data
-public/market_data.json
+# Note: market_data.json is committed so it's available in production
+# public/market_data.json
 
