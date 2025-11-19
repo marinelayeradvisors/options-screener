@@ -4,26 +4,37 @@ import { useState, useEffect } from 'react'
 import { MarketData } from './types'
 import DataTable from './components/DataTable'
 import SpotlightCard from './components/SpotlightCard'
-import { TrendingUp, Shield, Layers } from 'lucide-react'
+import { TrendingUp, Shield, Layers, RefreshCw } from 'lucide-react'
 
 export default function Home() {
   const [data, setData] = useState<MarketData[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [filter, setFilter] = useState<'all' | 'income' | 'protection'>('all')
   const [selectedTicker, setSelectedTicker] = useState<MarketData | null>(null)
 
+  const loadData = async () => {
+    try {
+      const res = await fetch('/market_data.json?' + new Date().getTime()) // Cache bust
+      const json = await res.json()
+      setData(json)
+      setLoading(false)
+      setRefreshing(false)
+    } catch (err) {
+      console.error('Failed to load market data:', err)
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
   useEffect(() => {
-    fetch('/market_data.json')
-      .then((res) => res.json())
-      .then((json) => {
-        setData(json)
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error('Failed to load market data:', err)
-        setLoading(false)
-      })
+    loadData()
   }, [])
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    loadData()
+  }
 
   const filteredCount = filter === 'all' 
     ? data.length 
@@ -46,9 +57,10 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
+        {/* Filters and Refresh */}
         <div className="mb-6">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setFilter('all')}
               aria-pressed={filter === 'all'}
@@ -83,6 +95,16 @@ export default function Home() {
             >
               <Shield className="w-4 h-4" />
               Cheap Protection
+            </button>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all shadow-sm bg-white text-foreground hover:bg-gray-50 border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Reload market data from server"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh Data'}
             </button>
           </div>
           
